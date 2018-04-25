@@ -14,7 +14,7 @@ ProtonPlan::ProtonPlan(G4String FilePath) : TotalNoProtons{0.}
 	double XPos, YPos, SpotWeight; //spot entry
 	
 	Spot aSpot;
-	size_t LayerCounter=-1;
+	G4int LayerCounter=-1;
 	G4String GantryString;
 	G4int GantryNumber;
 	PlanFile>>GantryString>>GantryNumber;
@@ -70,10 +70,10 @@ void ProtonPlan::SetUpCDF()
 
 	G4double Weight=0, NoProtons=0;
 	CDF InputCDF;
-	for (size_t i=0;i<GetNoLayers();++i)
+	for (G4int i=0;i<GetNoLayers();++i)
 	{
 		Energy=GetLayerEnergy(i);
-		for (size_t j=0;j<GetNoSpots(i);++j)
+		for (G4int j=0;j<GetNoSpots(i);++j)
 		{
 			Weight=GetSpotWeight(i,j);
 			NoProtons=Weight*NoProtonsInt(Energy);

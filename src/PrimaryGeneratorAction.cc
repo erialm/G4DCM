@@ -3,22 +3,32 @@
 #include "G4LogicalVolumeStore.hh"
 #include "G4LogicalVolume.hh"
 #include "G4Box.hh"
-#include "G4RunManager.hh"
 #include "G4ParticleGun.hh"
+#ifdef G4MULTITHREADED
+#include "G4MTRunManager.hh"
+#else
+#include "G4RunManager.hh"
+#endif
 #include "G4ParticleTable.hh"
 #include "G4ParticleDefinition.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "G4Proton.hh"
-
+#include "RunAction.hh"
+#include "G4AutoLock.hh"
+namespace { G4Mutex myHEPPrimGenMutex = G4MUTEX_INITIALIZER; }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-PrimaryGeneratorAction::PrimaryGeneratorAction(RunAction* ARun)
-: G4VUserPrimaryGeneratorAction(),
-  TheParticleGun{nullptr}, TheRun{ARun}
+PrimaryGeneratorAction::PrimaryGeneratorAction()
+: G4VUserPrimaryGeneratorAction(), TheParticleGun{new G4ParticleGun}, ThePlan{nullptr}, TheModel{nullptr}
 {
+	#ifdef G4MULTITHREADED
+	const RunAction* TheRun=static_cast<const RunAction*> (G4MTRunManager::GetMasterRunManager()->GetUserRunAction());
+	#else
+	const RunAction* TheRun=static_cast<const RunAction*> (G4RunManager::GetRunManager()->GetUserRunAction());
+	#endif
 	ThePlan=TheRun->GetThePlan();
-	TheParticleGun = new G4ParticleGun;
+	TheModel=TheRun->GetTheModel();
   	TheParticleGun->SetParticleDefinition(G4Proton::ProtonDefinition());
 }
 
@@ -39,71 +49,56 @@ void PrimaryGeneratorAction::SampleSpotParameters(G4int LayerNumber, G4int SpotN
 	using std::cos;
 	using std::tan;
 	
-	G4double GaussVal,Rand,B,MaxGauss;
-	G4double A0X,A1X,A2X,X,Theta,NTheta,BaseTheta, BasePsi, NPsi;
+	G4double A0X, A1X, A2X, X, Angle, AngleTheta, NTheta, BaseTheta, AnglePsi, BasePsi, NPsi;
 	G4double GantryAngle=ThePlan->GetGantryAngle(LayerNumber);
-	A0X=TheRun->GetA0X(LayerNumber);
-	A1X=TheRun->GetA1X(LayerNumber);
-	A2X=TheRun->GetA2X(LayerNumber);
-	B=A0X*A2X-pow(A1X,2);
-	MaxGauss=1/(2*Pi*sqrt(B));
-	while (true)
-	{
-		X=CLHEP::RandFlat::shoot(-2*A2X,2*A2X);
-		Theta=CLHEP::RandFlat::shoot(-2*A0X,2*A0X);
-		GaussVal=1/(2*Pi*sqrt(B))*exp(-0.5*(A0X*pow(X,2)-2*A1X*X*Theta+A2X*pow(Theta,2))/B);
-		Rand=CLHEP::RandFlat::shoot(0.,MaxGauss);
-		if (Rand<GaussVal) 
-		{
-			SampledParameters.X=TheRun->GetBaseX(LayerNumber,SpotNumber)*mm+X*cos(GantryAngle);
-			SampledParameters.Z=TheRun->GetBaseZ(LayerNumber,SpotNumber)*mm+X*sin(GantryAngle);
-			BaseTheta=TheRun->GetBaseTheta(LayerNumber,SpotNumber);
-			BasePsi=TheRun->GetBasePsi(LayerNumber,SpotNumber);	
-			NTheta=(BaseTheta-tan(Theta*cos(GantryAngle)*1e-3))/(1+BaseTheta*tan(Theta*cos(GantryAngle)*1e-3));
-			NPsi=(BasePsi-tan(Theta*sin(GantryAngle)*1e-3))/(1+BasePsi*tan(Theta*sin(GantryAngle)*1e-3));
-			SampledParameters.Theta=NTheta;
-			SampledParameters.Psi=NPsi;
-			break;
-		}
-	}	
+	A0X=TheModel->GetA0X(LayerNumber);
+	A1X=TheModel->GetA1X(LayerNumber);
+	A2X=TheModel->GetA2X(LayerNumber);
+	X=G4RandGauss::shoot(0.,1.);
+	Angle=G4RandGauss::shoot(0.,1.);
+	Angle=(A1X*X+sqrt(A2X*A0X-pow(A1X,2))*Angle)/sqrt(A2X); //sample from bivariate Gaussian using Cholesky decomposition
+	X=sqrt(A2X)*X;
 
+	SampledParameters.X=TheModel->GetBaseX(LayerNumber,SpotNumber)*mm+X*mm*cos(GantryAngle);
+	SampledParameters.Z=TheModel->GetBaseZ(LayerNumber,SpotNumber)*mm+X*mm*sin(GantryAngle);
+	BaseTheta=TheModel->GetBaseTheta(LayerNumber,SpotNumber);
+	BasePsi=TheModel->GetBasePsi(LayerNumber,SpotNumber);	
+	AngleTheta=Angle*cos(GantryAngle);
+	AnglePsi=Angle*sin(GantryAngle);
+	NTheta=(BaseTheta+tan(AngleTheta))/(tan(AngleTheta)*BaseTheta+1);
+	NPsi=(BasePsi+tan(AnglePsi))/(tan(AnglePsi)*BasePsi+1);
+	SampledParameters.Theta=NTheta;
+	SampledParameters.Psi=NPsi;
 
-	G4double A0Y,A1Y,A2Y,Y,Phi,NPhi,BasePhi;
-	A0Y=TheRun->GetA0Y(LayerNumber);
-	A1Y=TheRun->GetA1Y(LayerNumber);
-	A2Y=TheRun->GetA2Y(LayerNumber);
-	B=A0Y*A2Y-pow(A1Y,2);
-	MaxGauss=1/(2*Pi*sqrt(B));
-	while (true) 
-	{
-		Y=CLHEP::RandFlat::shoot(-2*A2Y,2*A2Y);
-		Phi=CLHEP::RandFlat::shoot(-2*A0Y,2*A0Y);
-		GaussVal=1/(2*Pi*sqrt(B))*exp(-0.5*(A0Y*pow(Y,2)-2*A1Y*Y*Phi+A2Y*pow(Phi,2))/B);
-		Rand=CLHEP::RandFlat::shoot(0.,MaxGauss);
-		if (Rand<GaussVal) 
-		{	
-			SampledParameters.Y=TheRun->GetBaseY(LayerNumber,SpotNumber)*mm+Y*mm;
-			BasePhi=TheRun->GetBasePhi(LayerNumber,SpotNumber);
-			NPhi=(BasePhi-tan(Phi*1e-3))/(1+BasePhi*tan(Phi*1e-3));
-			SampledParameters.Phi=NPhi;
-			break;
-		}
-	}	
+	G4double A0Y, A1Y, A2Y, Y, Phi, NPhi, BasePhi;
+	A0Y=TheModel->GetA0Y(LayerNumber);
+	A1Y=TheModel->GetA1Y(LayerNumber);
+	A2Y=TheModel->GetA2Y(LayerNumber);
+	Y=G4RandGauss::shoot(0.,1.);
+	Phi=G4RandGauss::shoot(0.,1.);
+	Phi=(A1Y*Y+sqrt(A2Y*A0Y-pow(A1Y,2))*Phi)/sqrt(A2Y);
+	Y=sqrt(A2Y)*Y;
+		
+	SampledParameters.Y=TheModel->GetBaseY(LayerNumber,SpotNumber)*mm+Y*mm;
+	BasePhi=TheModel->GetBasePhi(LayerNumber,SpotNumber);
+	NPhi=(BasePhi+tan(Phi))/(tan(Phi)*BasePhi+1);
+	SampledParameters.Phi=NPhi;
 	
-	G4double EnergySpread=TheRun->GetEnergySpread(LayerNumber);
-	G4double NozzleEnergy=TheRun->GetBaseStartingEnergy(LayerNumber);
-	G4double E=CLHEP::RandGauss::shoot(NozzleEnergy,EnergySpread);
+	G4double EnergySpread=TheModel->GetEnergySpread(LayerNumber);
+	G4double NozzleEnergy=TheModel->GetBaseStartingEnergy(LayerNumber);
+	G4double E=G4RandGauss::shoot(NozzleEnergy,EnergySpread);
 	SampledParameters.Energy=E*MeV;
 	
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 std::array<G4int,2> PrimaryGeneratorAction::SampleSpot()
 {
+	G4int Size=ThePlan->GetCDFSize();
 	G4double P;
-	G4double R=CLHEP::RandFlat::shoot(0.,1.);
+	G4double R=G4RandFlat::shoot(0.,1.);
 	std::array<G4int,2> LayerSpot;
-	for (size_t i=0;i<ThePlan->GetCDFSize();++i)
-	{
+	for (G4int i=0;i<Size;++i)
+	{	
 		P=ThePlan->GetCDFProb(i);
 		if (R<=P)
 		{
@@ -117,8 +112,9 @@ std::array<G4int,2> PrimaryGeneratorAction::SampleSpot()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
+	G4AutoLock lock(&myHEPPrimGenMutex);
 	std::array<G4int,2> LayerSpot=SampleSpot();
-	SampleSpotParameters(LayerSpot[0], LayerSpot[1]);
+	SampleSpotParameters(LayerSpot[0], LayerSpot[1]);	
 	TheParticleGun->SetParticlePosition(G4ThreeVector(SampledParameters.X,SampledParameters.Y,SampledParameters.Z));
 	TheParticleGun->SetParticleMomentumDirection((G4ThreeVector(SampledParameters.Theta,SampledParameters.Phi,SampledParameters.Psi)));
 	TheParticleGun->SetParticleEnergy(SampledParameters.Energy);

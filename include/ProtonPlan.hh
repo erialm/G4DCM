@@ -22,13 +22,13 @@ public:
 		G4double Prob;
 	};
 	void PrintEnergies() const {for (size_t i=0;i<EnergyVector.size();++i) G4cout << EnergyVector[i] << G4endl;}
-	size_t GetNoLayers() const {return SpotVector.size();}
-	size_t GetNoSpots(size_t i) const {return SpotVector[i].size();}
-	G4double GetSpotX(size_t LayerNum, size_t SpotNum) const {return SpotVector[LayerNum][SpotNum].X;}
-	G4double GetSpotY(size_t LayerNum, size_t SpotNum) const {return SpotVector[LayerNum][SpotNum].Y;}
-	G4double GetSpotWeight(size_t LayerNum, size_t SpotNum) const {return SpotVector[LayerNum][SpotNum].Weight;}
-	G4double GetLayerEnergy(size_t LayerNum) const {return EnergyVector[LayerNum];} 
-	G4double GetGantryAngle(size_t LayerNum) const {return GantryVector[LayerNum];}
+	G4int GetNoLayers() const {return SpotVector.size();}
+	G4int GetNoSpots(G4int i) const {return SpotVector[i].size();}
+	G4double GetSpotX(G4int LayerNum, G4int SpotNum) const {return SpotVector[LayerNum][SpotNum].X;}
+	G4double GetSpotY(G4int LayerNum, G4int SpotNum) const {return SpotVector[LayerNum][SpotNum].Y;}
+	G4double GetSpotWeight(G4int LayerNum, G4int SpotNum) const {return SpotVector[LayerNum][SpotNum].Weight;}
+	G4double GetLayerEnergy(G4int LayerNum) const {return EnergyVector[LayerNum];} 
+	G4double GetGantryAngle(G4int LayerNum) const {return GantryVector[LayerNum];}
 	G4int GetCDFLayer(G4int i) const {return PlanCDF[i].LayerNumber;}
 	G4int GetCDFSpot(G4int i) const {return PlanCDF[i].SpotNumber;}
 	G4double GetCDFProb(G4int i) const {return PlanCDF[i].Prob;}

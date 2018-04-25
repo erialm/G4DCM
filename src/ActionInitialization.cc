@@ -7,7 +7,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 ActionInitialization::ActionInitialization(G4String FilePath)
- : G4VUserActionInitialization(), PlanPath{FilePath}
+ : G4VUserActionInitialization(), TheRun{new RunAction(FilePath)}
 {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -17,21 +17,18 @@ ActionInitialization::~ActionInitialization()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-/*void ActionInitialization::BuildForMaster() const
+void ActionInitialization::BuildForMaster() const
 {
-  RunAction* runAction = new RunAction;
-  SetUserAction(runAction);
-}*/
+  SetUserAction(TheRun);
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void ActionInitialization::Build() const
 {
-  RunAction* TheRun = new RunAction(PlanPath);
-  SetUserAction(TheRun); 
+  SetUserAction(new PrimaryGeneratorAction);
   SetUserAction(new StackingAction);
   SetUserAction(new SteppingAction(TheRun));
-  SetUserAction(new PrimaryGeneratorAction(TheRun));
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

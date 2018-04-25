@@ -5,6 +5,7 @@
 #include "G4ParticleGun.hh"
 #include "globals.hh"
 #include "ProtonPlan.hh"
+#include "BeamModel.hh"
 #include <vector>
 #include "RunAction.hh"
 #include <array>
@@ -13,7 +14,7 @@ class G4Event;
 class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
 {
   public:
-    PrimaryGeneratorAction(RunAction*);
+    PrimaryGeneratorAction();
     virtual ~PrimaryGeneratorAction();
     virtual void GeneratePrimaries(G4Event*);
     struct StartParameters {
@@ -32,9 +33,9 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     void SampleSpotParameters(G4int, G4int);
   private:
     static constexpr G4double Pi=3.14159265359;
-    G4ParticleGun* TheParticleGun;
-    RunAction* TheRun;
     ProtonPlan* ThePlan;
+    BeamModel* TheModel;
+    G4ParticleGun* TheParticleGun;
     StartParameters SampledParameters;
 };
 #endif
