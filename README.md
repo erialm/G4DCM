@@ -1,6 +1,8 @@
 # G4DCM
 Will add more here at some point. 
 
+This code is based on the extended DICOM example in Geant4, using the DCMTK library. Most of the code is from that example. In the form I use it, it made its first appearance in Geant4.10.3.
+
 The beam model is currently hard coded for Skandionkliniken. If I find it useful at some point I might add some messenger classes
 so that some fiddling can more easily be done with text input. Currently, the necessary input files are all hardcoded as stored in ../../INPUTDATA/ relative the executable.
 
