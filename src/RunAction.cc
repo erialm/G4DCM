@@ -34,7 +34,7 @@ RunAction::RunAction(G4String PlanPath)
 	G4RunManager* RunManager=G4RunManager::GetRunManager();
 	#endif
 	G4double NoPlanProtons=ThePlan->GetNoProtons(); 
-	G4int SimProtons=NoPlanProtons/5000; //simulate approximately 1/1000 of the real number of protons; narrowing to G4int because SetNumberOfEventsToBeProcessed method requires it
+	G4int SimProtons=NoPlanProtons/1000; //simulate approximately 1/1000 of the real number of protons; narrowing to G4int because SetNumberOfEventsToBeProcessed method requires it
 	NormFactor=NoPlanProtons/SimProtons;
 	RunManager->SetNumberOfEventsToBeProcessed(SimProtons);
 }
@@ -43,9 +43,8 @@ RunAction::RunAction(G4String PlanPath)
 void RunAction::AddDose(G4int x, G4int y, G4int z,G4double D)
 {
 	G4AutoLock lock(&myHEPPrimGenMutex);
-	using std::pow;
 	DoseSpectrum[x][y][z][0]+=D;	//Dose
-	DoseSpectrum[x][y][z][1]+=pow(D,2); //Dose squared
+	DoseSpectrum[x][y][z][1]+=D*D; //Dose squared
 	++DoseSpectrum[x][y][z][2];	//Number of depositions
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

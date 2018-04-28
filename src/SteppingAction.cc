@@ -40,8 +40,6 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 	G4LogicalVolume* CurrentVolume=step->GetTrack()->GetVolume()->GetLogicalVolume();
 	if (CurrentVolume!=Voxel) return;	//Don't do anything if particle is not in target volume
 	G4TouchableHandle Touchable = step->GetPreStepPoint()->GetTouchableHandle();
-	//G4Material* VoxMat=Touchable->GetVolume()->GetLogicalVolume()->GetMaterial();
-	//G4cout <<  "Density: " << VoxMat->GetDensity() << " Material: " << VoxMat->GetName() << G4endl;
         G4int x=Touchable->GetReplicaNumber(1);
 	G4int y=Touchable->GetReplicaNumber(2);
 	G4int z=Touchable->GetReplicaNumber(0);
