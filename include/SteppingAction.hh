@@ -23,8 +23,6 @@ class SteppingAction : public G4UserSteppingAction
     virtual void UserSteppingAction(const G4Step*);
   private:
     G4LogicalVolume* Voxel;
-    G4int CurrentEventID;
-    G4double MeanEnergy;
     RunAction* TheRun;
 };
 

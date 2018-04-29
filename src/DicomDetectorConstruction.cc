@@ -30,7 +30,7 @@
 //
 
 #include "globals.hh"
-
+#include <fstream>
 #include "G4Box.hh"
 #include "G4LogicalVolume.hh"
 #include "G4VPhysicalVolume.hh"
@@ -776,7 +776,12 @@ void DicomDetectorConstruction::ConstructPhantomContainerNew()
                          0, 0, 0 );
 
   //open file containing isocenter position
-  G4ThreeVector IsoCenterPosition(21.5791,66.4725,-577.2002);
+  std::ifstream IsoCenter{"../../INPUTDATA/Isocenter.txt"};
+  G4double IsoX, IsoY, IsoZ;
+  IsoCenter >> IsoX >> IsoY >> IsoZ; 
+  G4ThreeVector IsoCenterPosition{IsoX,IsoY,IsoZ}; //SEEMS CORRECT; fMinX+fMaxX will position the volume using the DICOM coordinate system
+  //G4ThreeVector IsoCenterPosition(21.5791,66.4725,-577.2002); //SEEMS CORRECT; fMinX+fMaxX will position the volume using the DICOM coordinate system
+  //in the world volume; Subtracting the isocenter position from this position will give the isocenter position (0,0,0)
   G4ThreeVector posCentreVoxels((fMinX+fMaxX)/2.-IsoCenterPosition.x(),(fMinY+fMaxY)/2.-IsoCenterPosition.y(),(fMinZ+fMaxZ)/2.-IsoCenterPosition.z());
 #ifdef G4VERBOSE
   G4cout << " placing voxel container volume at " << posCentreVoxels << G4endl;

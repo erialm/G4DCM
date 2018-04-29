@@ -6,15 +6,20 @@
 #include "G4Track.hh"
 #include "G4TrackStatus.hh"
 #include "G4Event.hh"
+#ifdef G4MULTITHREADED
+#include "G4MTRunManager.hh"
+#else
 #include "G4RunManager.hh"
+#endif
 #include "G4LogicalVolume.hh"
 #include "G4LogicalVolumeStore.hh"
 #include "G4TouchableHandle.hh"
 #include "G4Material.hh"
+#include "RunAction.hh"
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SteppingAction::SteppingAction(RunAction* Run)
-: G4UserSteppingAction(), Voxel{nullptr}, TheRun{Run}, CurrentEventID{-1}, MeanEnergy{-1.}
+SteppingAction::SteppingAction(RunAction* MasterRun)
+: G4UserSteppingAction(), Voxel{nullptr}, TheRun{MasterRun}
 {
 }
 
@@ -35,10 +40,11 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 	G4LogicalVolume* CurrentVolume=step->GetTrack()->GetVolume()->GetLogicalVolume();
 	if (CurrentVolume!=Voxel) return;	//Don't do anything if particle is not in target volume
 	G4TouchableHandle Touchable = step->GetPreStepPoint()->GetTouchableHandle();
-	G4int x=Touchable->GetReplicaNumber(1);
+        G4int x=Touchable->GetReplicaNumber(1);
 	G4int y=Touchable->GetReplicaNumber(2);
 	G4int z=Touchable->GetReplicaNumber(0);
 	G4double EnergyDeposition=step->GetTotalEnergyDeposit();
+	
 	if (EnergyDeposition>0) TheRun->AddDose(x,y,z,EnergyDeposition);
 	
 }
