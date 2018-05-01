@@ -19,7 +19,7 @@ class RunAction : public G4UserRunAction
 
     ProtonPlan* GetThePlan() const {return ThePlan;}
     BeamModel* GetTheModel() const {return TheModel;}
-    void AddDose(G4int, G4int, G4int, G4double);
+    void AddDose(G4int, G4int, G4int, G4double) noexcept;
  private:
     static constexpr G4double MeV2J=1.60217662e-13;
     G4double TotalNoProtons;

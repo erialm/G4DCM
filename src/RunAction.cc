@@ -40,7 +40,7 @@ RunAction::RunAction(G4String PlanPath)
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void RunAction::AddDose(G4int x, G4int y, G4int z,G4double D)
+void RunAction::AddDose(G4int x, G4int y, G4int z,G4double D) noexcept
 {
 	G4AutoLock lock(&myHEPPrimGenMutex);
 	DoseSpectrum[x][y][z][0]+=D;	//Dose
