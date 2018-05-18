@@ -16,7 +16,7 @@
 #include "G4Proton.hh"
 #include "RunAction.hh"
 #include "G4AutoLock.hh"
-namespace { G4Mutex myHEPPrimGenMutex = G4MUTEX_INITIALIZER; }
+namespace { G4Mutex GeneratorMutexLock = G4MUTEX_INITIALIZER; }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorAction::PrimaryGeneratorAction()
@@ -112,7 +112,7 @@ std::array<G4int,2> PrimaryGeneratorAction::SampleSpot()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
-	G4AutoLock lock(&myHEPPrimGenMutex);
+	G4AutoLock lock(&GeneratorMutexLock);
 	std::array<G4int,2> LayerSpot=SampleSpot();
 	SampleSpotParameters(LayerSpot[0], LayerSpot[1]);	
 	TheParticleGun->SetParticlePosition(G4ThreeVector(SampledParameters.X,SampledParameters.Y,SampledParameters.Z));

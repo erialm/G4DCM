@@ -23,7 +23,7 @@
 #include "G4ParticleDefinition.hh"
 #include <stdexcept>
 #define BINS 3
-namespace { G4Mutex myHEPPrimGenMutex = G4MUTEX_INITIALIZER; }
+namespace { G4Mutex SteppingMutexLock = G4MUTEX_INITIALIZER; }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 RunAction::RunAction(G4String PlanPath)
 : G4UserRunAction(), ThePlan{new ProtonPlan(PlanPath)}, TheModel{new BeamModel(ThePlan)}, TotalNoProtons{0.}, SimFraction{0.}
@@ -42,7 +42,7 @@ RunAction::RunAction(G4String PlanPath)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void RunAction::AddDose(G4int x, G4int y, G4int z,G4double D) noexcept
 {
-	G4AutoLock lock(&myHEPPrimGenMutex);
+	G4AutoLock lock(&SteppingMutexLock);
 	DoseSpectrum[x][y][z][0]+=D;	//Dose
 	DoseSpectrum[x][y][z][1]+=D*D; //Dose squared
 	++DoseSpectrum[x][y][z][2];	//Number of depositions
@@ -96,16 +96,16 @@ void RunAction::EndOfRunAction(const G4Run*)
 	G4int ZVoxNum=Detector->GetNoVoxelsZ();
 
 	ofstream DoseMatrix{"../../OUTPUTDATA/DoseMatrix.dat",ofstream::binary};
-	//ofstream DoseUncertainty{"/../../OUTPUTDATA/DoseUncertainty.dat",ofstream::binary};
+	ofstream DoseUncertainty{"/../../OUTPUTDATA/DoseUncertainty.dat",ofstream::binary};
 	G4cout << "X voxels: " << XVoxNum << " Y voxels: " << YVoxNum << " Z voxels: " << ZVoxNum << G4endl;
 	DoseMatrix.write(reinterpret_cast<char*>(&XVoxNum),sizeof(G4int));
 	DoseMatrix.write(reinterpret_cast<char*>(&YVoxNum),sizeof(G4int));
 	DoseMatrix.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(G4int));
 	
-	//DoseUncertainty.write(reinterpret_cast<char*>(&XVoxNum),sizeof(size_t));
-	//DoseUncertainty.write(reinterpret_cast<char*>(&YVoxNum),sizeof(size_t));
-	//DoseUncertainty.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(size_t));
-	G4double VoxelDose=-1, VoxelMass=0;
+	DoseUncertainty.write(reinterpret_cast<char*>(&XVoxNum),sizeof(size_t));
+	DoseUncertainty.write(reinterpret_cast<char*>(&YVoxNum),sizeof(size_t));
+	DoseUncertainty.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(size_t));
+	G4double S, N, DoseSquare, VoxelDose=-1, VoxelMass=0;
 	for (G4int i=(ZVoxNum-1);i>=0;--i) //start from negative since IEC is negative in the beam direction
 	{
 		for (G4int j=0;j<YVoxNum;++j)
@@ -113,13 +113,12 @@ void RunAction::EndOfRunAction(const G4Run*)
 			for (G4int k=0;k<XVoxNum;++k)
 			{	
 				VoxelDose=DoseSpectrum[k][j][i][0];
-				//if (VoxelDose>1) G4cout << VoxelDose << G4endl;				
-				//DoseSquare=DoseSpectrum[k][j][i][1];
-				//N=DoseSpectrum[k][j][i][2];
-				//S=(DoseSquare/N-pow(VoxelDose/N,2))*N/(N-1);	//sample population variance
-				//S=sqrt(S)/sqrt(N);	//standard deviation
-				//S=N*S*MeV2J/VoxelMass;
-				//DoseUncertainty.write(reinterpret_cast<char*>(&S),sizeof(G4double));
+				DoseSquare=DoseSpectrum[k][j][i][1];
+				N=DoseSpectrum[k][j][i][2];
+				S=(DoseSquare/N-pow(VoxelDose/N,2))*N/(N-1);	//sample population variance
+				S=sqrt(S)/sqrt(N);	//standard deviation of the mean
+				S=N*S*MeV2J/VoxelMass*NormFactor;
+				DoseUncertainty.write(reinterpret_cast<char*>(&S),sizeof(G4double));
 				
 	
 				VoxelMass=Detector->GetVoxelMass(k,j,i);

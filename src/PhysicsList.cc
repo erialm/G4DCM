@@ -10,4 +10,9 @@ PhysicsList::PhysicsList()
 PhysicsList::~PhysicsList()
 {
 }
+void PhysicsList::SetCuts()
+{
+        SetCutValue(10*m,"e-");
+        SetCutValue(10*m,"e+");
+}
 

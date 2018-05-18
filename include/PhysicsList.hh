@@ -3,7 +3,7 @@
 
 #include "G4VModularPhysicsList.hh"
 #include "globals.hh"
-
+#include "G4SystemOfUnits.hh"
 class G4VPhysicsConstructor;
 
 
@@ -18,7 +18,7 @@ public:
 
   //virtual void ConstructProcess();
 
-  //virtual void SetCuts();
+  virtual void SetCuts();
 
 };
 
