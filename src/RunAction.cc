@@ -96,15 +96,14 @@ void RunAction::EndOfRunAction(const G4Run*)
 	G4int ZVoxNum=Detector->GetNoVoxelsZ();
 
 	ofstream DoseMatrix{"../../OUTPUTDATA/DoseMatrix.dat",ofstream::binary};
-	ofstream DoseUncertainty{"/../../OUTPUTDATA/DoseUncertainty.dat",ofstream::binary};
-	G4cout << "X voxels: " << XVoxNum << " Y voxels: " << YVoxNum << " Z voxels: " << ZVoxNum << G4endl;
+	ofstream DoseUncertainty{"../../OUTPUTDATA/DoseUncertainty.dat",ofstream::binary};
 	DoseMatrix.write(reinterpret_cast<char*>(&XVoxNum),sizeof(G4int));
 	DoseMatrix.write(reinterpret_cast<char*>(&YVoxNum),sizeof(G4int));
 	DoseMatrix.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(G4int));
 	
-	DoseUncertainty.write(reinterpret_cast<char*>(&XVoxNum),sizeof(size_t));
-	DoseUncertainty.write(reinterpret_cast<char*>(&YVoxNum),sizeof(size_t));
-	DoseUncertainty.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(size_t));
+	DoseUncertainty.write(reinterpret_cast<char*>(&XVoxNum),sizeof(G4int));
+	DoseUncertainty.write(reinterpret_cast<char*>(&YVoxNum),sizeof(G4int));
+	DoseUncertainty.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(G4int));
 	G4double S, N, DoseSquare, VoxelDose=-1, VoxelMass=0;
 	for (G4int i=(ZVoxNum-1);i>=0;--i) //start from negative since IEC is negative in the beam direction
 	{
