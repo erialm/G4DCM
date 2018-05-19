@@ -22,7 +22,9 @@
 #include "G4Proton.hh"
 #include "G4ParticleDefinition.hh"
 #include <stdexcept>
-#define BINS 3
+#include <limits>
+#define BINS 2
+
 namespace { G4Mutex SteppingMutexLock = G4MUTEX_INITIALIZER; }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 RunAction::RunAction(G4String PlanPath)
@@ -45,7 +47,6 @@ void RunAction::AddDose(G4int x, G4int y, G4int z,G4double D) noexcept
 	G4AutoLock lock(&SteppingMutexLock);
 	DoseSpectrum[x][y][z][0]+=D;	//Dose
 	DoseSpectrum[x][y][z][1]+=D*D; //Dose squared
-	++DoseSpectrum[x][y][z][2];	//Number of depositions
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 RunAction::~RunAction()
@@ -104,7 +105,8 @@ void RunAction::EndOfRunAction(const G4Run*)
 	DoseUncertainty.write(reinterpret_cast<char*>(&XVoxNum),sizeof(G4int));
 	DoseUncertainty.write(reinterpret_cast<char*>(&YVoxNum),sizeof(G4int));
 	DoseUncertainty.write(reinterpret_cast<char*>(&ZVoxNum),sizeof(G4int));
-	G4double S, N, DoseSquare, VoxelDose=-1, VoxelMass=0;
+	G4double S, DoseSquare, VoxelDose=-1, VoxelMass=0;
+        G4int N=ThePlan->GetNoProtons()/1000;
 	for (G4int i=(ZVoxNum-1);i>=0;--i) //start from negative since IEC is negative in the beam direction
 	{
 		for (G4int j=0;j<YVoxNum;++j)
@@ -113,16 +115,17 @@ void RunAction::EndOfRunAction(const G4Run*)
 			{	
 				VoxelDose=DoseSpectrum[k][j][i][0];
 				DoseSquare=DoseSpectrum[k][j][i][1];
-				N=DoseSpectrum[k][j][i][2];
-				S=(DoseSquare/N-pow(VoxelDose/N,2))*N/(N-1);	//sample population variance
-				S=sqrt(S)/sqrt(N);	//standard deviation of the mean
-				S=N*S*MeV2J/VoxelMass*NormFactor;
-				DoseUncertainty.write(reinterpret_cast<char*>(&S),sizeof(G4double));
+				VoxelMass=Detector->GetVoxelMass(k,j,i);
+                                S=(DoseSquare-pow(VoxelDose,2)/N)/(N-1);
+                                S=sqrt(S)/sqrt(N);	//standard deviation of the mean energy deposition;
+				S=N*S*MeV2J/VoxelMass*NormFactor; //Standard deviation of the total voxel dose
 				
 	
-				VoxelMass=Detector->GetVoxelMass(k,j,i);
 				VoxelDose*=MeV2J/VoxelMass*NormFactor;
 				DoseMatrix.write(reinterpret_cast<char*>(&VoxelDose),sizeof(G4double));
+				if (VoxelDose>0) S=S/VoxelDose*100;
+                                else S=std::numeric_limits<G4double>::quiet_NaN();
+                                DoseUncertainty.write(reinterpret_cast<char*>(&S),sizeof(G4double));
 			}
 		}
 	}
